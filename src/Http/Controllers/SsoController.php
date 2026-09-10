@@ -43,20 +43,47 @@ class SsoController
             return response(['success' => false, 'message' => 'Please configure a SSO Secret'], 403);
         }
 
-        if($request->input('sso_secret') !== config('sso-wemx.secret')) {
+        if(!hash_equals((string) config('sso-wemx.secret'), (string) $request->input('sso_secret'))) {
             return response(['success' => false, 'message' => 'Please provide valid credentials'], 403);
         }
 
         $user = User::findOrFail($request->input('user_id'));
-        if($user['root_admin']) {
-            return response(['success' => false, 'message' => 'You cannot automatically login to admin accounts.'], 501);
-        }
 
-        if($user['2fa']) {
-            return response(['success' => false, 'message' => 'Logging into accounts with 2 Factor Authentication enabled is not supported.'], 501);
+        if($reason = $this->blockedLoginReason($user)) {
+            return response(['success' => false, 'message' => $reason], 501);
         }
 
         return response(['success' => true, 'redirect' => route('sso-wemx.login', $this->generateToken($request->input('user_id')))], 200);
+    }
+
+    /**
+     * Pterodactyl's users table stores the TOTP flag as `use_totp` (there is no `2fa`
+     * column), so checking that key was always falsy and the 2FA block never fired.
+     * Both checks fail closed: a missing `root_admin` or `use_totp` key blocks the
+     * login rather than silently allowing it.
+     *
+     * Accepts the model (or an array in tests) via array access rather than
+     * ->toArray(), since toArray() applies Eloquent's $hidden filtering and could
+     * drop use_totp, causing every login to fail closed.
+     *
+     * @param  \Pterodactyl\Models\User|array  $user
+     * @return string|null the block reason, or null if the login is allowed
+     */
+    protected function blockedLoginReason($user): ?string
+    {
+        if(!isset($user['root_admin']) || $user['root_admin']) {
+            return 'You cannot automatically login to admin accounts.';
+        }
+
+        if(!isset($user['use_totp'])) {
+            return 'Unable to determine 2FA status for this account.';
+        }
+
+        if($user['use_totp']) {
+            return 'Logging into accounts with 2 Factor Authentication enabled is not supported.';
+        }
+
+        return null;
     }
 
     /**

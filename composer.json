@@ -13,11 +13,19 @@
     "prefer-stable": true,
     "require": {
         "php": "^8.0|^8.1|^8.2|^8.3",
-        "illuminate/support": "^10.0|^11.0"
+        "illuminate/support": "^10.0|^11.0|^12.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0|^11.0"
     },
     "autoload": {
         "psr-4": {
             "WemX\\Sso\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "WemX\\Sso\\Tests\\": "tests/"
         }
     },
     "extra": {
