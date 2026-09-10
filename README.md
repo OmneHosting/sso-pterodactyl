@@ -8,7 +8,13 @@ Laravel SSO is a package for implementing Single Sign-On (SSO) authorizations in
 ## Requirements
 
 - PHP 8.0 or higher
-- Laravel 10 or higher
+- Laravel 10, 11, or 12
+
+## Changelog
+
+- Added Laravel 12 support.
+- Fixed the SSO secret comparison to use a timing-safe `hash_equals()` check.
+- Fixed the 2FA guard: Pterodactyl's `users` table exposes the TOTP flag as `use_totp`, not `2fa`. The old key never existed, so the check was always falsy and never actually blocked 2FA-enabled accounts from SSO login. Accounts missing the `use_totp` key are now blocked by default (fail closed) rather than allowed through.
 
 ## Installation
 
